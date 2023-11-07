@@ -1,0 +1,25 @@
+---
+title: "Group 10 - Credit Scoring"
+author: "Timmy Tschannen, Sarah Lea Schürc, Keijo Alexander Nierula Roman Krass"
+date: "2023-11-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 
+
+```{r }
+# Importing libraries
+
+# Clear the environment before starting
+rm(list=ls())
+
+# Set seed
+set.seed(7)
+
+
+```
+
