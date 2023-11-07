@@ -1,35 +1,43 @@
 ---
 title: "Group 10 - Credit Scoring"
-author: "Timmy Tschannen, Sarah Lea Schürc, Keijo Alexander Nierula Roman Krass"
+author: "Timmy Tschannen, Sarah Lea Schürch, Keijo Alexander Nierula, Roman Krass"
 date: "2023-11-07"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo=FALSE}
+# Getting started by changing the default output of echo to TRUE for the current document 
 knitr::opts_chunk$set(echo = TRUE)
+
+# Create a list of packages to install and load into the work space
+libraries = c("readr", "tidyverse", "dlookr")
+ 
+# Install packages from the predefined libraries list
+lapply(libraries, function(x) if (!(x %in% installed.packages())) {
+  install.packages(x)
+})
+
+# Load libraries
+lapply(libraries, library, quietly = TRUE, character.only = TRUE)
+
+# Remove current environment 
+rm(list=ls())
 ```
 
-# 
+# Project Setup {.unnumbered}
 
 ```{r }
-# Importing libraries
-library(tidyverse)
-library(dlookr)
-
-# Clear the environment before starting
-rm(list=ls())
-
 # Set seed
 set.seed(7)
 
-
-```
-
-```{r }
-
 # Importing data
-Loandata <- read_csv("loan_sample_10.csv")
-data <- Loandata
+loanData <- read_csv("loan_sample_10.csv")
+data <- loanData
 
 # Checking structure of the data
 head(data)
