@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r }
 # Importing libraries
+library(tidyverse)
+library(dlookr)
 
 # Clear the environment before starting
 rm(list=ls())
@@ -23,3 +25,24 @@ set.seed(7)
 
 ```
 
+```{r }
+
+# Importing data
+Loandata <- read_csv("loan_sample_10.csv")
+data <- Loandata
+
+# Checking structure of the data
+head(data)
+tail(data)
+
+str(data)
+
+summary(data)
+
+overview(data)
+
+# Ploting the overview
+overview <- overview(data)
+plot(overview)
+
+```
