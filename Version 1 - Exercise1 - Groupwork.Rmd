@@ -1,0 +1,405 @@
+---
+title: "Version 1 - Group-Work"
+author: "Sarah Lea Schürch"
+date: "2023-11-17"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document analyzes the loan_sample data set. This dataset contains information about borrowers, including loan amounts, interest rates, annual income, debt ratio and other financial characteristics to analyze the creditworthiness and default risk of loan contracts.  
+In the first part, basic statistics are analyzed. In the second part, the balanced data set is trained to generate predictions. The third part analyzes how the prediction performance can be increased. The last part draws conclusions from the data analysis and analyzes how the model can be put into action.
+
+# Preparation
+## The environment
+In a first step, we clear the environment
+```{r environment, echo=TRUE}
+# Clear the environment 
+rm(list=ls())
+```
+
+## Library and data
+The following libraries (and any associated packages) must be installed for the following code to run. We then load the data and create a copy.
+### Install the packages and call the libraries
+```{r packages, message=FALSE, warning=FALSE}
+#install.packages("readr")
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages("tidyverse")
+#install.packages("Hmisc")
+#install.packages("plotly")
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(Hmisc)
+library(tidyverse)
+library(reshape2)
+library(plotly)
+```
+
+## Import the dataset into the environment
+In this step, we import the dataset and create a copy of the original data.
+```{r data, message=FALSE, warning=FALSE}
+loan_data <- read_csv("loan_sample_10.csv")
+## Makes a copy of the original data
+data <- loan_data   
+
+## Is used so that the columns from the data record can be accessed directly (not with data$Date)
+attach(data)
+```
+
+# Description of variables
+This list describes the variables of the dataset loan_data:
+
+annual_inc: The self-reported annual income provided by the borrower during registration  
+application_type: Indicates whether the loan is an individual or joint application  
+dti: Borrower’s total monthly debt payments divided by monthly income  
+grade: Assigned loan grade by the financial service provider  
+home_ownership: The home ownership status  
+int_rate: Interest Rate on the loan  
+loan_amnt: The listed amount of the loan applied for by the borrower  
+open_acc: Number of open trades in last 6 months  
+purpose: A category provided by the borrower for the loan request  
+revol_bal: Total credit revolving balance  
+revol_util: Revolving line utilization rate  
+tot_cur_bal: Total current balance of all accounts  
+total_acc: The total number of credit lines currently in the borrower’s credit file  
+total_rec_int: Interest received to date  
+total_rev_hi_lim: Total revolving high credit/credit limit  
+verification_status: Indicates if the co-borrowers’ joint income was verified  
+
+# Exercise 1
+The first exercise analyzes the basics of the loan_sample data set.
+## 1.1. Description of the data
+The structure of the dataset has shown that loan_sample consists of numeric and categorical variables. The numeric variables include loan amount, interest rate, annual income, DTI ratio, number of open accounts, revolving balance, revolving utilization rate, total number of lines of credit, total interest received, total current balance, and total high revolving line of credit. Categorical variables include loan class, homeownership status, verification status, loan purpose and application type.
+The data set thus contains 12 numerical variables and 5 categorical variables. The categorical variable with the most levels is "purpose", which has 13 different levels.
+
+The summary of variables has shown the following:
+The average loan amount is $11,668. Interest rates average 12.63%. The average annual income of borrowers is $63,327. The average debt-to-income ratio (DTI) is 18.22%. The average number of open accounts is approximately 10. The average revolving balance is $11,939, with an average revolving utilization rate of 52.07%. Borrowers have an average of 21 lines of credit and average total interest income is approximately $1,817. The average current total balance is approximately $99,134, and the average maximum revolving line of credit is $24,158.
+
+The target variable "Status" is not balanced. Around 87.15% of loans are not in default (status = 0), while only around 12.85% are in default (status = 1). This imbalance could affect the performance of the prediction models and should be taken into account in further analysis.
+
+Finally, the histograms for the individual numerical variables show different distributions. Many variables, such as "loan_amnt", "annual_inc", "revol_bal" and "tot_cur_bal", are right-skewed, i.e. most values are on the left-hand side with a long tail on the right-hand side. The interest rate ("int_rate") has a more varied distribution with several peaks. The interest rate for revolving utilization ("revol_util") is relatively evenly distributed across its range.
+
+```{r descriptive, echo=TRUE}
+# 1.1.1. Check and Report the Structure of the Dataset
+# First, we check the dimension of the dataset
+dim(data)
+# Next, we display the structure of the dataset, showing the type of each variable (numeric, categorical, etc.).
+str(loan_data)
+
+# Next we have a look at the head and tail of the dataset to get accustomed with the data.
+head(data)
+tail(data)
+
+# 1.1.2. Count Numeric and Categorical Variables
+# This code counts the number of numeric and categorical variables in the dataset.
+num_vars <- sum(sapply(data, is.numeric))
+cat_vars <- sum(sapply(data, is.factor)) # Assuming categorical variables are factors
+
+# Print counts
+cat("Number of numeric variables:", num_vars, "\n")
+cat("Number of categorical variables:", cat_vars, "\n")
+
+# 1.1.3. Summarize Variables and Discuss Statistics
+# This code provides summary statistics for each variable in the dataset.
+summary(data)
+
+# 1.1.4. Visualize Levels of the Target Variable
+# This code creates a bar plot to visualize the distribution of the target variable, showing whether it's balanced.
+ggplot(loan_data, aes(x = factor(Status))) +
+  geom_bar() +
+  labs(x = "Loan Status", y = "Count", title = "Distribution of Loan Status")
+
+# 1.1.5 Distribution and visualization of Numeric Variables
+# This code generates a histogram for each numeric variable
+# Function to plot histogram for each numeric variable
+plot_histograms <- function(data) {
+  numeric_vars <- sapply(data, is.numeric)
+  data_numeric <- data[, numeric_vars]
+
+  # Loop through each numeric variable
+  for(var in names(data_numeric)) {
+    print(
+      ggplot(data, aes_string(x = var)) +
+        geom_histogram(bins = 30, fill = "blue", color = "black") +
+        labs(x = var, y = "Frequency", title = paste("Distribution of", var)) +
+        theme_minimal()
+    )
+  }
+}
+
+# Apply the function to the loan dataset
+plot_histograms(loan_data)
+
+```
+
+
+## 1.2. Analysing Outliers
+Outliers in a data set can significantly distort the results of data analysis and forecasting models. We used box plots to visually identify outliers in each numeric variable. The IQR method is then used to define and remove extreme outliers, especially in key variables such as annual income (annual_inc). This step is crucial for creating a more accurate and reliable model, as outliers can distort the relationships between variables and the overall distribution of the data. 
+
+Other methods to handle outliers would be winsorizing (replacing extreme values with highest and lowest values within a certain percentile), transformation (e.g. with logarithm or square root), imputation of data (replacing outliers with estimated values, such as the median or mean) or leaving untouched (if the impact of outliers is minimal). We make the decision to use the IQR method because it is simple and effective in dealing with extreme values. It is a widely accepted technique that is particularly suitable for symmetric distributions or when the goal is to retain the majority of the data and remove only the most extreme outliers. The IQR method is particularly useful for ensuring that the conclusions drawn from the data are not unduly influenced by extreme values. 
+
+```{r outliers, echo=TRUE}
+# Function to plot box plots for each numeric variable
+# The function plot_boxplots identifies all numeric variables in the dataset and creates box plots for each.
+plot_boxplots <- function(data) {
+  numeric_vars <- sapply(data, is.numeric)
+  data_numeric <- data[, numeric_vars]
+
+  # Loop through each numeric variable
+  for(var in names(data_numeric)) {
+    print(
+      ggplot(data, aes_string(y = var)) +
+        geom_boxplot(fill = "blue", color = "black") +
+        labs(y = var, title = paste("Boxplot of", var)) +
+        theme_minimal()
+    )
+  }
+}
+
+# Apply the function to the loan dataset
+plot_boxplots(loan_data)
+
+# Handling outliers (Example: Removing extreme outliers)
+handle_outliers <- function(data, variable, threshold = 1.5) {
+  Q1 <- quantile(data[[variable]], 0.25)
+  Q3 <- quantile(data[[variable]], 0.75)
+  IQR <- Q3 - Q1
+  lower_bound <- Q1 - threshold * IQR
+  upper_bound <- Q3 + threshold * IQR
+
+  # Filter out extreme outliers
+  data <- data[data[[variable]] >= lower_bound & data[[variable]] <= upper_bound, ]
+  return(data)
+}
+
+# Apply the function to a variable with extreme outliers (Example: 'annual_inc')
+loan_data_clean <- handle_outliers(loan_data, 'annual_inc')
+
+```
+
+## 1.3. Visualization to display the distribution of the numeric features
+To visualize the distribution of numerical features, box plots provide a clear summary of the data distribution and highlight medians, quartiles and outliers. When split by a categorical variable such as loan status, they allow for direct comparison between groups. This is particularly useful for identifying which numerical characteristics might behave differently in the two categories of the target characteristic and provides insight into which variables might be significant predictors.
+
+**Discussion of the visualization**  
+After running the code below, we will get box plots for each numeric variable, broken down by loan status. These plots show the median (middle line in the box) of each group, the dispersion (size of the box), which shows the variability and the ossible outliers (points outside the whiskers).  
+
+Based on the generated boxplots for a subset of numeric variables in the loan_data dataset, in this section is our discussion of the findings presented:  
+**Loan Amount (loan_amnt)**  
+The distribution of loan amounts seems relatively similar for both default and non-default groups. However, there's a slight indication that higher loan amounts might be more prevalent in the default group. This suggests that as the loan amount increases, there might be a slightly higher risk of default.
+
+**Interest Rate (int_rate)**  
+The interest rate shows a notable difference between the two groups. Loans that end up in default tend to have higher interest rates. This is evident from the higher median and the spread of the box for the default group. Higher interest rates could be an indicator of increased risk associated with the loan, leading to a higher likelihood of default.
+
+**Annual Income (annual_inc)**  
+The annual income of borrowers does not show a significant difference in the medians of the two groups, although the non-default group seems to have a slightly higher income range. This might suggest that while income is a factor, it's not a strong differentiator between default and non-default cases on its own.
+
+**Debt-to-Income Ratio (dti)**  
+The debt-to-income ratio appears slightly higher for the default group. This suggests that a higher DTI ratio might be associated with a greater risk of default. The higher spread in the default group indicates a wider variability in DTI ratios among those who default.
+
+**Revolving Balance (revol_bal)**
+The revolving balance shows a relatively similar distribution across both groups, with a slightly higher median in the non-default group. This indicates that revolving balance alone might not be a strong predictor of default.
+
+From this analysis, it seems that the interest rate and debt-to-income ratio are particularly relevant variables in predicting the likelihood of loan default. Higher interest rates and higher DTI ratios are more common in loans that default, suggesting these factors are important in assessing credit risk. While loan amount, annual income, and revolving balance do show some differences, their impact appears to be less pronounced compared to interest rates and DTI ratios. 
+
+```{r distribution-numerical, echo=TRUE}
+# Visualizing Numeric Features by Target Feature
+# This code generates box plots for each numeric variable, separated by the target feature 'Status'.
+# Function to create box plots for each numeric variable, separated by loan status
+plot_numeric_by_target <- function(data, target) {
+  numeric_vars <- sapply(data, is.numeric)
+  data_numeric <- data[, numeric_vars]
+
+  for (var in names(data_numeric)) {
+    # Corrected usage of print() to render the plots
+    print(
+      ggplot(data, aes_string(x = target, y = var, fill = target)) +
+      geom_boxplot() +
+      labs(title = paste("Distribution of", var, "by", target), x = target, y = var) +
+      theme_minimal()
+    )
+  }
+}
+
+# Apply the function to the loan dataset
+plot_numeric_by_target(loan_data, 'Status')
+```
+
+## 1.4. Visualization to display the distribution of the categorial features
+The code in this section creates bar plots for each categorical variable, showing their association with the loan status (default vs. non-default).
+
+From these plots, we can observe the proportion of default and non-default cases within each category of the categorical variables. The significant differences in the proportion of default vs. non-default cases across the categories of a variable suggest a potential association. For example, if a certain loan purpose or grade shows a noticeably higher proportion of defaults, it may indicate that these variables are relevant in predicting loan defaults.
+
+The following points describe our findings:  
+**Loan Grade (grade):**  
+There is a noticeable trend in loan defaults across different loan grades. Lower grades (typically representing higher risk) show a higher proportion of defaults. This suggests that the loan grade is a significant factor in predicting loan defaults.
+
+**Home Ownership (home_ownership)**  
+The distribution of loan status varies across different home ownership categories. However, the variation is not as pronounced as with loan grades. It appears that borrowers with mortgages have a slightly higher count of non-defaults compared to other categories.
+
+**Verification Status (verification_status)**  
+The verification status of the borrower also shows an interesting pattern. Loans with verified statuses tend to have a lower proportion of defaults compared to those that are not verified or are source verified. This implies that verification status might play a role in predicting loan defaults.
+
+**Purpose of the Loan (purpose)**  
+The purpose of the loan demonstrates varying patterns of defaults. Certain purposes, like debt consolidation, show a higher number of defaults. This variation suggests that the reason for taking out a loan could be an indicator of default risk.
+
+**Application Type (application_type)**  
+The application type, whether individual or joint, shows some differences in default rates. Individual applications seem to have a slightly higher proportion of defaults compared to joint applications, indicating that the type of application might be a factor in default risk.
+
+From these observations, it's evident that certain categorical variables such as loan grade and loan purpose show a more pronounced association with loan status, indicating their potential relevance in predicting loan defaults. Variables like home ownership and application type also show some association but to a lesser degree. The verification status, interestingly, has a noticeable impact, suggesting that the level of scrutiny in the loan approval process can affect the likelihood of a loan defaulting. These insights are valuable for understanding the risk factors associated with loan defaults and can guide further analysis and modeling efforts. 
+
+```{r distribution-categorial, echo=TRUE}
+#Visualizing Associations with Bar Plots
+# Function to plot bar plots for each categorical variable
+plot_categorical_associations <- function(data, target) {
+  categorical_vars <- sapply(data, is.factor) # or is.character, depending on how data is loaded
+  data_categorical <- data[, categorical_vars]
+
+  for(var in names(data_categorical)) {
+    # Create the plot and assign it to a variable
+    plot <- ggplot(data, aes_string(x = var, fill = target)) +
+      geom_bar(position = "fill") +
+      labs(title = paste("Association between", var, "and", target), x = var, y = "Proportion") +
+      theme_minimal() +
+      scale_fill_brewer(palette = "Set1") +
+      guides(fill = guide_legend(title = target))
+    
+    # Print the plot
+    print(plot)
+  }
+}
+
+# Apply the function to the loan dataset
+plot_categorical_associations(loan_data, 'Status')
+```
+
+
+## 1.5. Visualization of the correlations
+The heatmap of the correlation matrix for the numeric features in the loan_data dataset reveals the following insights:
+
+### Analysis of Highly Correlated Variables  
+**Total Accounts (total_acc) and Open Accounts (open_acc)**  
+There is a strong positive correlation between the total number of credit lines (total_acc) and the number of open trades (open_acc). This is expected as having more total accounts typically means more open accounts.
+
+**Total Current Balance (tot_cur_bal) and Total Revolving High Credit/Limit (total_rev_hi_lim)**  
+A significant positive correlation is observed between the total current balance and the total revolving high credit/credit limit. This suggests that borrowers with higher total balances tend to have higher credit limits.
+
+**Loan Amount (loan_amnt) and Interest Received (total_rec_int)**
+The loan amount is positively correlated with the total interest received. This indicates that larger loans accumulate more interest over time.
+
+**Other Notable Correlations**  
+There are moderate correlations between other variables like loan amount and annual income, indicating that borrowers with higher incomes tend to take larger loans.
+
+### Decision on Keeping Variables
+When deciding whether to keep all variables, it's important to consider the degree of correlation. While high correlation indicates a relationship, it doesn't necessarily imply causation.
+In predictive modeling, extremely high correlations can lead to multicollinearity, which might skew the results of certain models like linear regression. For building a predictive model, particularly when using linear models, we should address high correlations by removing one of the correlated variables or using dimensionality reduction techniques.
+
+```{r correlations, echo=TRUE}
+# The code first selects only numeric variables from our dataset. It then calculates the correlation matrix using Pearson correlation. The melt function from the reshape2 package is used to transform the correlation matrix into a long format suitable for ggplot. Finally, a heatmap is plotted using ggplot2 with appropriate color scales to represent the strength and direction of correlations.
+
+# Selecting only the numeric variables from the dataset
+numeric_vars <- loan_data[sapply(loan_data, is.numeric)]
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(numeric_vars, use = "complete.obs")
+
+# Melt the correlation matrix for visualization
+melted_correlation_matrix <- melt(correlation_matrix)
+
+# Plotting the correlation matrix
+ggplot(melted_correlation_matrix, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1),
+        axis.text.y = element_text(size = 12)) +
+  labs(x = '', y = '', title = 'Correlation Matrix of Numeric Features')
+```
+
+## 1.6. Interactive scatter plot of the association
+The scatter plot showing the relationship between the loan amount requested and the annual income of the borrowers reveals the following insights:
+
+**Association Between Loan Amount and Annual Incom**  
+Positive Correlation: There appears to be a positive correlation between the loan amount and the annual income. As the annual income increases, the loan amounts also tend to increase. This suggests that borrowers with higher incomes are likely to request larger loans.
+
+**Variability in Loan Amounts**  
+Despite the positive trend, there is considerable variability in the loan amounts across different income levels. This indicates that factors other than income also play a significant role in determining the loan amount.
+
+**Income Range**  
+The plot shows a wide range of incomes among borrowers. Those with lower incomes tend to request smaller loans, while those with higher incomes have a broader range of loan amounts.
+
+**Outliers and Spread**  
+There are some outliers, particularly at higher income levels, where borrowers with very high incomes request relatively small loan amounts. Additionally, the spread of loan amounts widens with increasing income, suggesting more variability in the loan amounts requested by higher-income borrowers.
+
+**Conclusion and Decision on Variables**  
+High Correlation: Given the positive correlation, both annual_inc (annual income) and loan_amnt (loan amount) are important variables for predicting loan behavior and should be considered in the predictive model.
+
+Keeping Both Variables: Although they are correlated, both variables likely contribute unique information. Annual income is a key factor in a borrower's ability to repay, while the loan amount is directly related to the loan's terms and risk. Therefore, it would be beneficial to keep both variables in the model.
+
+In summary, the association between loan amount and annual income is significant and positive, indicating the importance of these variables in the predictive model. Their relationship suggests that while income is a factor in determining loan amounts, other variables also influence the final loan amount requested.
+
+```{r scatterplot, echo=TRUE}
+# We plot an interactive scatter plot showing the association between the loan amount requested and the annual income of the borrower
+# Creating an interactive scatter plot
+plot <- plot_ly(loan_data, x = ~annual_inc, y = ~loan_amnt, type = "scatter", mode = "markers",
+                marker = list(size = 10, opacity = 0.5),
+                hoverinfo = "text",
+                text = ~paste("Annual Income:", annual_inc, "<br>Loan Amount:", loan_amnt))
+                
+# Adding layout details
+plot <- plot %>% layout(title = "Scatter Plot of Loan Amount vs Annual Income",
+                        xaxis = list(title = "Annual Income"),
+                        yaxis = list(title = "Loan Amount"))
+
+# Display the plot
+plot
+```
+
+## 1.7. New balanced data set
+In this step we creating a balanced dataset where the two levels of the target variable ('Status') are equally represented, and then we visualize this with a bar plot. 
+
+Balancing the Dataset is important for the following different points:
+
+**Avoid Bias in Models**    
+When a dataset is imbalanced, especially in a binary classification problem, models can become biased towards the majority class. This can lead to poor generalization performance on the minority class.
+
+**Better Performance Metrics**  
+Balanced datasets provide a more realistic evaluation of model performance metrics, especially those sensitive to class imbalance like accuracy, precision, and recall.
+
+**Reflect Real-World Scenarios**  
+In some cases, balancing a dataset can help models learn patterns that are not overrepresented by the majority class, thus better reflecting real-world scenarios where the target classes are more evenly distributed.
+
+```{r balanced, echo=TRUE}
+# In this last step we build a balanced dataset
+
+# Check the balance of the original dataset
+table(loan_data$Status)
+
+# Create a balanced dataset
+# First, separate the dataset into two based on the target variable
+data_default <- loan_data %>% filter(Status == 1)
+data_no_default <- loan_data %>% filter(Status == 0)
+
+# Then, randomly sample from the larger group to match the size of the smaller group
+set.seed(123) # for reproducibility
+data_no_default_balanced <- data_no_default %>% sample_n(nrow(data_default))
+
+# Combine the two balanced datasets
+balanced_data <- rbind(data_default, data_no_default_balanced)
+
+# Create a bar plot of the newly created target variable
+ggplot(balanced_data, aes(x = factor(Status))) +
+  geom_bar() +
+  labs(title = "Bar Plot of Balanced Target Variable", x = "Loan Status", y = "Count")
+```
+
+```{r end, echo=FALSE}
+# It is important that this is done again at the end of the document.
+detach(data)
+```
