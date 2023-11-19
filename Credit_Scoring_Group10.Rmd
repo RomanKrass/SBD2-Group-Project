@@ -5,7 +5,7 @@ date: "2023-11-07"
 output: 
   html_document:
     toc: true
-    toc_depth: 2
+    toc_depth: 3
     toc_float: true
     number_sections: true
 ---
@@ -15,7 +15,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 
 # Create a list of packages to install and load into the work space
-libraries = c("readr", "tidyverse", "dlookr")
+libraries = c("readr", "tidyverse", "dlookr", "ggpubr")
  
 # Install packages from the predefined libraries list
 lapply(libraries, function(x) if (!(x %in% installed.packages())) {
@@ -29,28 +29,104 @@ lapply(libraries, library, quietly = TRUE, character.only = TRUE)
 rm(list=ls())
 ```
 
-# Project Setup {.unnumbered}
+```{r graph_setup, results="hide", message=FALSE}
 
+# Define colors to create a general style 
+custom_fill <- "#a8d1d1"
+custom_alpha <- 0.8
+custom_color <- "darkgrey"
+
+
+```
+
+# Project Setup {.unnumbered}
 ```{r }
-# Set seed
+# Set seed that the following results will stay the same when using the same seed
 set.seed(7)
 
 # Importing data
+# Make sure, the loan_sample_10.csv-file is located in the same directory as this RMD-file
 loanData <- read_csv("loan_sample_10.csv")
+
+# Store loaded loan data in variable called "data"
 data <- loanData
 
-# Checking structure of the data
+# Checking data for unusual things at the beginning or ending of the data set
 head(data)
 tail(data)
-
-str(data)
-
-summary(data)
-
-overview(data)
-
-# Ploting the overview
-overview <- overview(data)
-plot(overview)
-
 ```
+The `head()` and `tail()` functions show, that there is no unusual observation and the data set looks complete and has no emtpy rows at the end.
+
+# Checking data for NA values {.unnumbered}
+```{r}
+# Check for missing values in each column of the data set and store the result in the "has_NAs" data frame
+has_NAs = as.data.frame(apply(data, 2, function(x) any(is.na(x))))
+
+# Map matching column names for a more readable output
+colnames(has_NAs) = c("has_NA")
+
+# Print the has_NAs data frame to check if there are any NA values in our data set
+has_NAs
+```
+We also found out, that none of the variables has any `NA` values.
+
+---
+
+# Exercise 1
+
+## Describe the data. Specifically:
+
+### Check and report the structure of the data set.
+```{r}
+str(data)
+```
+
+### How many numeric and how many categorical variables are included in the data? What categorical variable has the most levels in it?
+```{r}
+str(data)
+```
+Reporting the structure of the data set shows us, that we have 5 character columns and 12 number columns.
+
+### Summarize the variables. Discuss the summary statistics obtained.
+```{r}
+summary(data)
+```
+
+### Check the levels of the target variable by choosing the appropriate visualization. Is the target variable balanced?
+```{r}
+str(data)
+```
+While checking the summary, we can observe, that there might be some values with insane outliers. For example `annual_inc`, `revol_bal` or `tot_cur_bal`. These variables all have a small minimum compared to the median and the max value. This could mean that either the data is very wide spread or there are a few outliers that have an impact on the median and the mean.
+
+### Check the distribution of the numeric variables in the data set (include different visual representations).
+```{r}
+#store all numeric data in new data set
+data_numeric = data %>% select_if(is.numeric)
+
+# make a loop to iterate through all numeric variables
+for (i in 1:length(data_numeric[,])) {
+  # get the column names to create the titles for the plots
+  col_names = names(data_numeric)
+  col_name_by_index =  col_names[i]
+  
+  boxplot <- ggplot(data,
+       aes(x = `data_numeric[,i]`)) +
+  geom_boxplot(
+    outlier.color = "#006769",
+    outlier.size  = 1,
+    fill = "#006769",
+    color = "black",
+    alpha = .8) +
+  labs(title = "Bitcoin box plot by coinbase exchange", x="Bitcoin price in dollars")
+  
+  print(ggarrange(boxplot))
+}
+```
+
+## blabla
+for (col in names(data_numeric)) {
+  ggplot(data, aes_string(x = "", y = col)) +
+    geom_boxplot() +
+    labs(title = paste("Boxplot of", col))
+}
+
