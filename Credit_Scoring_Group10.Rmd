@@ -98,35 +98,3 @@ str(data)
 ```
 While checking the summary, we can observe, that there might be some values with insane outliers. For example `annual_inc`, `revol_bal` or `tot_cur_bal`. These variables all have a small minimum compared to the median and the max value. This could mean that either the data is very wide spread or there are a few outliers that have an impact on the median and the mean.
 
-### Check the distribution of the numeric variables in the data set (include different visual representations).
-```{r}
-#store all numeric data in new data set
-data_numeric = data %>% select_if(is.numeric)
-
-# make a loop to iterate through all numeric variables
-for (i in 1:length(data_numeric[,])) {
-  # get the column names to create the titles for the plots
-  col_names = names(data_numeric)
-  col_name_by_index =  col_names[i]
-  
-  boxplot <- ggplot(data,
-       aes(x = `data_numeric[,i]`)) +
-  geom_boxplot(
-    outlier.color = "#006769",
-    outlier.size  = 1,
-    fill = "#006769",
-    color = "black",
-    alpha = .8) +
-  labs(title = "Bitcoin box plot by coinbase exchange", x="Bitcoin price in dollars")
-  
-  print(ggarrange(boxplot))
-}
-```
-
-## blabla
-for (col in names(data_numeric)) {
-  ggplot(data, aes_string(x = "", y = col)) +
-    geom_boxplot() +
-    labs(title = paste("Boxplot of", col))
-}
-
