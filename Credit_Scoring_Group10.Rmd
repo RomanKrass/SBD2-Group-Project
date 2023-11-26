@@ -15,7 +15,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
 
 # Create a list of packages to install and load into the work space
-libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "reshape2", "plotly", "caret", "ROCR", "yardstick")
+libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "reshape2", "plotly", "caret", "ROCR")
  
 # Install packages from the predefined libraries list
 lapply(libraries, function(x) if (!(x %in% installed.packages())) {
@@ -130,8 +130,10 @@ While checking the summary, we can observe, that there might be some values with
 ```{r}
 ggplot(data, aes(x = factor(Status))) +
   geom_bar(fill = custom_fill, color = custom_color) +
-  labs(x = "Loan Status", y = "Count", title = "Distribution of Loan Status")
+  labs(x = "Loan Status", y = "Count", title = "Distribution of Loan Status") +
+  theme_minimal(base_size = 22)
 ```
+
 Checking the levels of the `loan status` variable, we can see, that the distribution is not balanced. There are much more entries with status = 0 than status = 1.
 
 ### Check the distribution of the numeric variables in the data set (include different visual representations).
@@ -150,7 +152,7 @@ plot_histograms <- function(data) {
       ggplot(data, aes_string(x = var)) +
         geom_histogram(bins = 30, fill = custom_fill, color = custom_color) +
         labs(x = var, y = "Frequency", title = paste("Distribution of", var)) +
-        theme_minimal()
+        theme_minimal(base_size = 22)
     )
   }
 }
@@ -178,7 +180,7 @@ plot_boxplots <- function(data) {
       ggplot(data, aes_string(y = var)) +
         geom_boxplot(fill = custom_fill, color = custom_color) +
         labs(y = var, title = paste("Boxplot of", var)) +
-        theme_minimal()
+        theme_minimal(base_size = 22)
     )
   }
 }
@@ -205,10 +207,10 @@ plot_numeric_by_target <- function(data, target) {
   for (var in names(data_numeric)) {
     # Corrected usage of print() to render the plots
     print(
-      ggplot(data, aes(x = as.factor(target), y = var, fill = as.factor(target))) +
+      ggplot(data, aes(x = as.factor(target), y = !!sym(var), fill = as.factor(target))) +
       geom_boxplot(fill = custom_fill, color = custom_color) +
       labs(title = paste("Distribution of", var, "by Status"), x = "Status", y = var) +
-      theme_minimal()
+      theme_minimal(base_size = 22)
     )
   }
 }
@@ -256,9 +258,10 @@ plot_categorical_associations <- function(data) {
     plot <- ggplot(data, aes(x = !!sym(var), fill = factor(data$Status))) +
       geom_bar(position = "stack") +
       labs(title = paste("Association between", var, "and Status"), x = var, y = "Count") +
-      theme_minimal() +
+      theme_minimal(base_size = 22) +
       scale_fill_brewer(palette = "Set1") +
-      guides(fill = guide_legend(title = "Status"))
+      guides(fill = guide_legend(title = "Status"))+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     # Print the plot
     print(plot)
@@ -314,9 +317,8 @@ ggplot(melted_correlation_matrix, aes(Var1, Var2, fill = value)) +
   scale_fill_gradient2(low = custom_light, high = custom_dark, mid = "white", 
                        midpoint = 0, limit = c(-1,1), space = "Lab", 
                        name="Pearson\nCorrelation") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1),
-        axis.text.y = element_text(size = 12)) +
+  theme_minimal(base_size = 22) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   labs(x = '', y = '', title = 'Correlation Matrix of Numeric Features')
 ```
 
@@ -390,7 +392,8 @@ balanced_data <- rbind(data_default, data_no_default_balanced)
 # Create a bar plot of the newly created target variable
 ggplot(balanced_data, aes(x = factor(Status))) +
   geom_bar(fill = custom_fill, color = custom_color) +
-  labs(title = "Bar Plot of Balanced Target Variable", x = "Loan Status", y = "Count")
+  labs(title = "Bar Plot of Balanced Target Variable", x = "Loan Status", y = "Count") +
+  theme_minimal(base_size = 22)
 
 # Check the balance of the new dataset
 table(balanced_data$Status)
