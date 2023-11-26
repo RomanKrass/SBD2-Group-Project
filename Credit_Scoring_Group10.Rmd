@@ -12,10 +12,10 @@ output:
 
 ```{r setup, include=FALSE, echo=FALSE}
 # Getting started by changing the default output of echo to TRUE for the current document 
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
 
 # Create a list of packages to install and load into the work space
-libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "tidyverse", "reshape2", "plotly")
+libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "reshape2", "plotly", "caret", "ROCR")
  
 # Install packages from the predefined libraries list
 lapply(libraries, function(x) if (!(x %in% installed.packages())) {
@@ -205,16 +205,16 @@ plot_numeric_by_target <- function(data, target) {
   for (var in names(data_numeric)) {
     # Corrected usage of print() to render the plots
     print(
-      ggplot(data, aes_string(x = target, y = var)) +
+      ggplot(data, aes_string(x = as.factor(target), y = var, fill = as.factor(target))) +
       geom_boxplot(fill = custom_fill, color = custom_color) +
-      labs(title = paste("Distribution of", var, "by", target), x = target, y = var) +
+      labs(title = paste("Distribution of", var, "by Status"), x = "Status", y = var) +
       theme_minimal()
     )
   }
 }
 
 # Apply the function to the loan dataset
-plot_numeric_by_target(data, 'Status')
+plot_numeric_by_target(data, data$Status)
 ```
 
 **Discussion of the visualization**  
@@ -258,7 +258,7 @@ plot_categorical_associations <- function(data, target) {
       labs(title = paste("Association between", var, "and", target), x = var, y = "Proportion") +
       theme_minimal() +
       scale_fill_brewer(palette = "Set1") +
-      guides(fill = guide_legend(title = target))
+      guides(fill = guide_legend(title = "Status"))
     
     # Print the plot
     print(plot)
@@ -266,7 +266,7 @@ plot_categorical_associations <- function(data, target) {
 }
 
 # Apply the function to the loan dataset
-plot_categorical_associations(data, 'Status')
+plot_categorical_associations(data, "Status")
 ```
 
 From these plots, we can observe the proportion of default and non-default cases within each category of the categorical variables. The significant differences in the proportion of default vs. non-default cases across the categories of a variable suggest a potential association. For example, if a certain loan purpose or grade shows a noticeably higher proportion of defaults, it may indicate that these variables are relevant in predicting loan defaults.
@@ -405,3 +405,70 @@ Balanced datasets provide a more realistic evaluation of model performance metri
 
 **Reflect Real-World Scenarios**  
 In some cases, balancing a dataset can help models learn patterns that are not overrepresented by the majority class, thus better reflecting real-world scenarios where the target classes are more evenly distributed.
+
+<!-- ----------- Exercise 2 ----------- -->
+# Exercise 2
+
+<!-- ----------- Exercise 2.1 ----------- -->
+## Create a training and test data set
+Divide the sample into training and testing set using 70% for training the algorithm.
+```{r, trainingData}
+# Set the seed again because it sometime gets lost
+set.seed(7)
+
+# Split the data into training and test sets. 70% of the data will be used for training and 30% for testing.
+balanced_data$Status <- as.factor(balanced_data$Status)
+div <- createDataPartition(y = balanced_data$Status, p = 0.7, list = F)
+
+# Training Sample
+data.train <- balanced_data[div,] # 70% here
+
+# Test Sample
+data.test <- balanced_data[-div,] # rest of the 30% data goes here
+
+```
+
+<!-- ----------- Exercise 2.2 ----------- -->
+## Create a logistic regression model
+Train the classifier and report the coefficients obtained and interpret the results.
+```{r, training}
+
+# Set charachter variables which are not a factor as factor so the glm function can work with them
+mutate(data.train, Status = as.factor(Status),
+        application_type = as.factor(application_type),
+        grade = as.factor(grade),
+        home_ownership = as.factor(home_ownership),
+        purpose = as.factor(purpose),
+        verification_status = as.factor(verification_status))
+
+model <- glm(Status ~ ., data = data.train, family = binomial())
+summary(model)
+
+```
+
+```{r}
+# Extract the significant variables from the model
+significant.variables <- summary(model)$coeff[-1,4] < 0.05
+names(significant.variables)[significant.variables == TRUE]
+
+```
+
+
+<!-- ----------- Exercise 2.3 ----------- -->
+Plot the ROC and the Precision/Recall Curve and interpret the results.
+
+```{r, ROC}
+
+# Test the perfromance of the model with the test data
+data.test$fit_score <- predict(model,type='response',data.test)
+model_preddiction <- prediction(data.test$fit_score, data.test$Status)
+model_roc <- performance(model_preddiction, "tpr", "fpr")
+
+# Plot the ROC Curve
+plot(model_roc, lwd=1, colorize = TRUE, main = "Model to predict Status - ROC Curve", 
+  cex.main=2, 
+  cex.axis=1.7, 
+  cex.lab=2)
+lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
+
+```
