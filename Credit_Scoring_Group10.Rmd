@@ -205,7 +205,7 @@ plot_numeric_by_target <- function(data, target) {
   for (var in names(data_numeric)) {
     # Corrected usage of print() to render the plots
     print(
-      ggplot(data, aes_string(x = as.factor(target), y = var, fill = as.factor(target))) +
+      ggplot(data, aes(x = as.factor(target), y = var, fill = as.factor(target))) +
       geom_boxplot(fill = custom_fill, color = custom_color) +
       labs(title = paste("Distribution of", var, "by Status"), x = "Status", y = var) +
       theme_minimal()
@@ -244,18 +244,18 @@ From this analysis, it seems that the interest rate and debt-to-income ratio are
 ## Visualization to display the distribution of the categorial features
 The code in this section creates bar plots for each categorical variable, showing their association with the loan status (default vs. non-default).
 
-```{r distribution-categorial, echo=TRUE}
-#Visualizing Associations with Bar Plots
+```{r distribution-categorial}
+
 # Function to plot bar plots for each categorical variable
-plot_categorical_associations <- function(data, target) {
-  categorical_vars <- sapply(data, is.factor) # or is.character, depending on how data is loaded
+plot_categorical_associations <- function(data) {
+  categorical_vars <- sapply(data, is.character) # or is.character, depending on how data is loaded
   data_categorical <- data[, categorical_vars]
 
   for(var in names(data_categorical)) {
     # Create the plot and assign it to a variable
-    plot <- ggplot(data, aes_string(x = var)) +
-      geom_bar(position = "fill", fill = custom_fill, color = custom_color) +
-      labs(title = paste("Association between", var, "and", target), x = var, y = "Proportion") +
+    plot <- ggplot(data, aes(x = !!sym(var), fill = factor(data$Status))) +
+      geom_bar(position = "stack") +
+      labs(title = paste("Association between", var, "and Status"), x = var, y = "Count") +
       theme_minimal() +
       scale_fill_brewer(palette = "Set1") +
       guides(fill = guide_legend(title = "Status"))
@@ -266,7 +266,8 @@ plot_categorical_associations <- function(data, target) {
 }
 
 # Apply the function to the loan dataset
-plot_categorical_associations(data, "Status")
+plot_categorical_associations(data)
+
 ```
 
 From these plots, we can observe the proportion of default and non-default cases within each category of the categorical variables. The significant differences in the proportion of default vs. non-default cases across the categories of a variable suggest a potential association. For example, if a certain loan purpose or grade shows a noticeably higher proportion of defaults, it may indicate that these variables are relevant in predicting loan defaults.
@@ -470,5 +471,11 @@ plot(model_roc, lwd=1, colorize = TRUE, main = "Model to predict Status - ROC Cu
   cex.axis=1.7, 
   cex.lab=2)
 lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
+
+```
+
+<!-- ----------- Exercise 2.4 ----------- -->
+```{r}
+
 
 ```
