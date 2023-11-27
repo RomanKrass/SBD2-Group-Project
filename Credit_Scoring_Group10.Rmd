@@ -15,7 +15,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
 
 # Create a list of packages to install and load into the work space
-libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "reshape2", "plotly", "caret", "ROCR")
+libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "reshape2", "plotly", "caret", "ROCR", "kableExtra")
  
 # Install packages from the predefined libraries list
 lapply(libraries, function(x) if (!(x %in% installed.packages())) {
@@ -43,8 +43,8 @@ data <- loanData
 head(data)
 tail(data)
 ```
-The `head()` and `tail()` functions show, that there is no unusual observation and the data set looks complete and has no emtpy rows at the end.
 
+The `head()` and `tail()` functions show, that there is no unusual observation and the data set looks complete and has no emtpy rows at the end.
 
 ```{r graph_setup, results="hide", message=FALSE}
 # Define colors to create a general style 
@@ -56,6 +56,7 @@ custom_dark <- "#105F77"
 ```
 
 # Checking data for NA values {.unnumbered}
+
 ```{r}
 # Check for missing values in each column of the data set and store the result in the "has_NAs" data frame
 has_NAs = as.data.frame(apply(data, 2, function(x) any(is.na(x))))
@@ -66,50 +67,58 @@ colnames(has_NAs) = c("has_NA")
 # Print the has_NAs data frame to check if there are any NA values in our data set
 has_NAs
 ```
+
 We also found out, that none of the variables has any `NA` values.
 
 # Description of variables {.unnumbered}
+
 This list describes the variables of the dataset loan_data:
 
-annual_inc: The self-reported annual income provided by the borrower during registration  
-application_type: Indicates whether the loan is an individual or joint application  
-dti: Borrower’s total monthly debt payments divided by monthly income  
-grade: Assigned loan grade by the financial service provider  
-home_ownership: The home ownership status  
-int_rate: Interest Rate on the loan  
-loan_amnt: The listed amount of the loan applied for by the borrower  
-open_acc: Number of open trades in last 6 months  
-purpose: A category provided by the borrower for the loan request  
-revol_bal: Total credit revolving balance  
-revol_util: Revolving line utilization rate  
-tot_cur_bal: Total current balance of all accounts  
-total_acc: The total number of credit lines currently in the borrower’s credit file  
-total_rec_int: Interest received to date  
-total_rev_hi_lim: Total revolving high credit/credit limit  
-verification_status: Indicates if the co-borrowers’ joint income was verified  
+annual_inc: The self-reported annual income provided by the borrower during registration\
+application_type: Indicates whether the loan is an individual or joint application\
+dti: Borrower's total monthly debt payments divided by monthly income\
+grade: Assigned loan grade by the financial service provider\
+home_ownership: The home ownership status\
+int_rate: Interest Rate on the loan\
+loan_amnt: The listed amount of the loan applied for by the borrower\
+open_acc: Number of open trades in last 6 months\
+purpose: A category provided by the borrower for the loan request\
+revol_bal: Total credit revolving balance\
+revol_util: Revolving line utilization rate\
+tot_cur_bal: Total current balance of all accounts\
+total_acc: The total number of credit lines currently in the borrower's credit file\
+total_rec_int: Interest received to date\
+total_rev_hi_lim: Total revolving high credit/credit limit\
+verification_status: Indicates if the co-borrowers' joint income was verified
 
---------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1 ----------- -->
+
 # Exercise 1
 
 ## Describe the data. Specifically:
 
 <!-- ----------- Exercise 1.1 ----------- -->
+
 ### Check and report the structure of the data set.
+
 ```{r}
 # First, we check the dimension of the dataset
 dim(data)
 ```
+
 With the `dim` function we see, that there are 40'000 observations within 17 variables.
 
 ```{r}
 # Next, we display the structure of the dataset, showing the type of each variable (numeric, categorical, etc.).
 str(data)
 ```
-The `str` function shows us all the different variables and what type they're from. 
+
+The `str` function shows us all the different variables and what type they're from.
 
 ### How many numeric and how many categorical variables are included in the data? What categorical variable has the most levels in it?
+
 ```{r}
 num_vars <- sum(sapply(data, is.numeric))
 cat_vars <- sum(sapply(data, is.character))
@@ -118,15 +127,19 @@ cat_vars <- sum(sapply(data, is.character))
 cat("Number of numeric variables:", num_vars, "\n")
 cat("Number of categorical variables:", cat_vars, "\n")
 ```
+
 Reporting the structure of the data set shows us, that we have `r as.character(cat_vars)` character columns and `r as.character(num_vars)` number columns.
 
 ### Summarize the variables. Discuss the summary statistics obtained.
+
 ```{r}
 summary(data)
 ```
+
 While checking the summary, we can observe, that there might be some values with insane outliers. For example `annual_inc`, `revol_bal` or `tot_cur_bal`. These variables all have a small minimum compared to the median and the max value. This could mean that either the data is very wide spread or there are a few outliers that have an impact on the median and the mean.
 
 ### Check the levels of the target variable by choosing the appropriate visualization. Is the target variable balanced?
+
 ```{r}
 ggplot(data, aes(x = factor(Status))) +
   geom_bar(fill = custom_fill, color = custom_color) +
@@ -162,9 +175,10 @@ plot_histograms(data)
 
 ```
 
----
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.2 ----------- -->
+
 ## Analysing Outliers
 
 ```{r}
@@ -190,10 +204,12 @@ plot_boxplots(data)
 
 ```
 
----
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.3 ----------- -->
+
 ## Visualization to display the distribution of the numeric features
+
 To visualize the distribution of numerical features, box plots provide a clear summary of the data distribution and highlight medians, quartiles and outliers. When split by a categorical variable such as loan status, they allow for direct comparison between groups. This is particularly useful for identifying which numerical characteristics might behave differently in the two categories of the target characteristic and provides insight into which variables might be significant predictors.
 
 ```{r distribution-numerical, echo=TRUE}
@@ -219,31 +235,32 @@ plot_numeric_by_target <- function(data, target) {
 plot_numeric_by_target(data, data$Status)
 ```
 
-**Discussion of the visualization**  
-After running the code below, we will get box plots for each numeric variable, broken down by loan status. These plots show the median (middle line in the box) of each group, the dispersion (size of the box), which shows the variability and the ossible outliers (points outside the whiskers).  
+**Discussion of the visualization**\
+After running the code below, we will get box plots for each numeric variable, broken down by loan status. These plots show the median (middle line in the box) of each group, the dispersion (size of the box), which shows the variability and the ossible outliers (points outside the whiskers).
 
-Based on the generated boxplots for a subset of numeric variables in the loan_data dataset, in this section is our discussion of the findings presented:  
-**Loan Amount (loan_amnt)**  
+Based on the generated boxplots for a subset of numeric variables in the loan_data dataset, in this section is our discussion of the findings presented:\
+**Loan Amount (loan_amnt)**\
 The distribution of loan amounts seems relatively similar for both default and non-default groups. However, there's a slight indication that higher loan amounts might be more prevalent in the default group. This suggests that as the loan amount increases, there might be a slightly higher risk of default.
 
-**Interest Rate (int_rate)**  
+**Interest Rate (int_rate)**\
 The interest rate shows a notable difference between the two groups. Loans that end up in default tend to have higher interest rates. This is evident from the higher median and the spread of the box for the default group. Higher interest rates could be an indicator of increased risk associated with the loan, leading to a higher likelihood of default.
 
-**Annual Income (annual_inc)**  
+**Annual Income (annual_inc)**\
 The annual income of borrowers does not show a significant difference in the medians of the two groups, although the non-default group seems to have a slightly higher income range. This might suggest that while income is a factor, it's not a strong differentiator between default and non-default cases on its own.
 
-**Debt-to-Income Ratio (dti)**  
+**Debt-to-Income Ratio (dti)**\
 The debt-to-income ratio appears slightly higher for the default group. This suggests that a higher DTI ratio might be associated with a greater risk of default. The higher spread in the default group indicates a wider variability in DTI ratios among those who default.
 
-**Revolving Balance (revol_bal)**
-The revolving balance shows a relatively similar distribution across both groups, with a slightly higher median in the non-default group. This indicates that revolving balance alone might not be a strong predictor of default.
+**Revolving Balance (revol_bal)** The revolving balance shows a relatively similar distribution across both groups, with a slightly higher median in the non-default group. This indicates that revolving balance alone might not be a strong predictor of default.
 
-From this analysis, it seems that the interest rate and debt-to-income ratio are particularly relevant variables in predicting the likelihood of loan default. Higher interest rates and higher DTI ratios are more common in loans that default, suggesting these factors are important in assessing credit risk. While loan amount, annual income, and revolving balance do show some differences, their impact appears to be less pronounced compared to interest rates and DTI ratios. 
+From this analysis, it seems that the interest rate and debt-to-income ratio are particularly relevant variables in predicting the likelihood of loan default. Higher interest rates and higher DTI ratios are more common in loans that default, suggesting these factors are important in assessing credit risk. While loan amount, annual income, and revolving balance do show some differences, their impact appears to be less pronounced compared to interest rates and DTI ratios.
 
----
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.4 ----------- -->
+
 ## Visualization to display the distribution of the categorial features
+
 The code in this section creates bar plots for each categorical variable, showing their association with the loan status (default vs. non-default).
 
 ```{r distribution-categorial}
@@ -275,28 +292,30 @@ plot_categorical_associations(data)
 
 From these plots, we can observe the proportion of default and non-default cases within each category of the categorical variables. The significant differences in the proportion of default vs. non-default cases across the categories of a variable suggest a potential association. For example, if a certain loan purpose or grade shows a noticeably higher proportion of defaults, it may indicate that these variables are relevant in predicting loan defaults.
 
-The following points describe our findings:  
-**Loan Grade (grade):**  
+The following points describe our findings:\
+**Loan Grade (grade):**\
 There is a noticeable trend in loan defaults across different loan grades. Lower grades (typically representing higher risk) show a higher proportion of defaults. This suggests that the loan grade is a significant factor in predicting loan defaults.
 
-**Home Ownership (home_ownership)**  
+**Home Ownership (home_ownership)**\
 The distribution of loan status varies across different home ownership categories. However, the variation is not as pronounced as with loan grades. It appears that borrowers with mortgages have a slightly higher count of non-defaults compared to other categories.
 
-**Verification Status (verification_status)**  
+**Verification Status (verification_status)**\
 The verification status of the borrower also shows an interesting pattern. Loans with verified statuses tend to have a lower proportion of defaults compared to those that are not verified or are source verified. This implies that verification status might play a role in predicting loan defaults.
 
-**Purpose of the Loan (purpose)**  
+**Purpose of the Loan (purpose)**\
 The purpose of the loan demonstrates varying patterns of defaults. Certain purposes, like debt consolidation, show a higher number of defaults. This variation suggests that the reason for taking out a loan could be an indicator of default risk.
 
-**Application Type (application_type)**  
+**Application Type (application_type)**\
 The application type, whether individual or joint, shows some differences in default rates. Individual applications seem to have a slightly higher proportion of defaults compared to joint applications, indicating that the type of application might be a factor in default risk.
 
-From these observations, it's evident that certain categorical variables such as loan grade and loan purpose show a more pronounced association with loan status, indicating their potential relevance in predicting loan defaults. Variables like home ownership and application type also show some association but to a lesser degree. The verification status, interestingly, has a noticeable impact, suggesting that the level of scrutiny in the loan approval process can affect the likelihood of a loan defaulting. These insights are valuable for understanding the risk factors associated with loan defaults and can guide further analysis and modeling efforts. 
+From these observations, it's evident that certain categorical variables such as loan grade and loan purpose show a more pronounced association with loan status, indicating their potential relevance in predicting loan defaults. Variables like home ownership and application type also show some association but to a lesser degree. The verification status, interestingly, has a noticeable impact, suggesting that the level of scrutiny in the loan approval process can affect the likelihood of a loan defaulting. These insights are valuable for understanding the risk factors associated with loan defaults and can guide further analysis and modeling efforts.
 
----
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.5 ----------- -->
+
 ## Visualization of the correlations
+
 The heatmap of the correlation matrix for the numeric features in the loan_data dataset reveals the following insights:
 
 ```{r correlations, echo=TRUE}
@@ -322,10 +341,12 @@ ggplot(melted_correlation_matrix, aes(Var1, Var2, fill = value)) +
   labs(x = '', y = '', title = 'Correlation Matrix of Numeric Features')
 ```
 
----
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.6 ----------- -->
+
 ## Visualization of the correlations
+
 The scatter plot showing the relationship between the loan amount requested and the annual income of the borrowers reveals the following insights:
 
 ```{r scatterplot, echo=TRUE}
@@ -345,30 +366,31 @@ plot <- plot %>% layout(title = "Scatter Plot of Loan Amount vs Annual Income",
 plot
 ```
 
-**Association Between Loan Amount and Annual Income**  
+**Association Between Loan Amount and Annual Income**\
 Positive Correlation: There appears to be a positive correlation between the loan amount and the annual income. As the annual income increases, the loan amounts also tend to increase. This suggests that borrowers with higher incomes are likely to request larger loans.
 
-**Variability in Loan Amounts**  
+**Variability in Loan Amounts**\
 Despite the positive trend, there is considerable variability in the loan amounts across different income levels. This indicates that factors other than income also play a significant role in determining the loan amount.
 
-**Income Range**  
+**Income Range**\
 The plot shows a wide range of incomes among borrowers. Those with lower incomes tend to request smaller loans, while those with higher incomes have a broader range of loan amounts.
 
-**Outliers and Spread**  
+**Outliers and Spread**\
 There are some outliers, particularly at higher income levels, where borrowers with very high incomes request relatively small loan amounts. Additionally, the spread of loan amounts widens with increasing income, suggesting more variability in the loan amounts requested by higher-income borrowers.
 
-**Conclusion and Decision on Variables**  
+**Conclusion and Decision on Variables**\
 High Correlation: Given the positive correlation, both annual_inc (annual income) and loan_amnt (loan amount) are important variables for predicting loan behavior and should be considered in the predictive model.
 
 Keeping Both Variables: Although they are correlated, both variables likely contribute unique information. Annual income is a key factor in a borrower's ability to repay, while the loan amount is directly related to the loan's terms and risk. Therefore, it would be beneficial to keep both variables in the model.
 
 In summary, the association between loan amount and annual income is significant and positive, indicating the importance of these variables in the predictive model. Their relationship suggests that while income is a factor in determining loan amounts, other variables also influence the final loan amount requested.
 
----
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.7 ----------- -->
 
 ## New balanced data set
+
 In this step we creating a balanced dataset where the two levels of the target variable ('Status') are equally represented, and then we visualize this with a bar plot.
 
 ```{r balanced, echo=TRUE}
@@ -401,21 +423,25 @@ table(balanced_data$Status)
 
 Balancing the Dataset is important for the following different points:
 
-**Avoid Bias in Models**    
+**Avoid Bias in Models**\
 When a dataset is imbalanced, especially in a binary classification problem, models can become biased towards the majority class. This can lead to poor generalization performance on the minority class.
 
-**Better Performance Metrics**  
+**Better Performance Metrics**\
 Balanced datasets provide a more realistic evaluation of model performance metrics, especially those sensitive to class imbalance like accuracy, precision, and recall.
 
-**Reflect Real-World Scenarios**  
+**Reflect Real-World Scenarios**\
 In some cases, balancing a dataset can help models learn patterns that are not overrepresented by the majority class, thus better reflecting real-world scenarios where the target classes are more evenly distributed.
 
 <!-- ----------- Exercise 2 ----------- -->
+
 # Exercise 2
 
 <!-- ----------- Exercise 2.1 ----------- -->
+
 ## Create a training and test data set
+
 Divide the sample into training and testing set using 70% for training the algorithm.
+
 ```{r, trainingData}
 # Set the seed again because it sometime gets lost
 set.seed(7)
@@ -425,16 +451,19 @@ balanced_data$Status <- as.factor(balanced_data$Status)
 div <- createDataPartition(y = balanced_data$Status, p = 0.7, list = F)
 
 # Training Sample
-data.train <- balanced_data[div,] # 70% here
+data.train <- balanced_data[div,]
 
 # Test Sample
-data.test <- balanced_data[-div,] # rest of the 30% data goes here
+data.test <- balanced_data[-div,]
 
 ```
 
 <!-- ----------- Exercise 2.2 ----------- -->
+
 ## Create a logistic regression model
+
 Train the classifier and report the coefficients obtained and interpret the results.
+
 ```{r, training}
 
 # Set charachter variables which are not a factor as factor so the glm function can work with them
@@ -446,19 +475,35 @@ mutate(data.train, Status = as.factor(Status),
         verification_status = as.factor(verification_status))
 
 model <- glm(Status ~ ., data = data.train, family = binomial())
+
 summary(model)
 
 ```
 
+In the Summary it is visible, that not all a lot of variables don't have a significant impact on the model. Because of that we will only extract the coefficients of the significant variables in the next step and will analyze them.
+
 ```{r}
 # Extract the significant variables from the model
 significant.variables <- summary(model)$coeff[-1,4] < 0.05
-names(significant.variables)[significant.variables == TRUE]
+names.significant.variables <- names(significant.variables)[significant.variables == TRUE]
+
+
+# Create a table with the significant variables and their coefficients
+data.frame(Variable = names(coef(model)[names.significant.variables]), Coefficient = coef(model)[names.significant.variables]) %>%
+  rownames_to_column(var = "rowname") %>%
+  select(-rowname) %>%
+  arrange(desc(Coefficient)) %>%
+  kable("html") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F, position = "left")
+
 
 ```
 
+As visible in the table above all variables with a positive coefficient increase the chance of a default of the loan. The bigger the number is the higher is the chance for the default.\
+In contrast all values with a negative value decrease the chance for a default. The smaller the number, the less likely it is that the loan defaullts.
 
 <!-- ----------- Exercise 2.3 ----------- -->
+
 Plot the ROC and the Precision/Recall Curve and interpret the results.
 
 ```{r, ROC}
@@ -477,18 +522,28 @@ lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
 
 ```
 
+The ROC curve should be ideally as close as possible to the top left corner. This means that the model has a high true positive rate and a low false positive rate. In our ROC curve we can see, that the model is not very good. The curve is very close to the diagonal line. This means that the model is not very good in predicting the status of the loan.
+
 <!-- ----------- Exercise 2.4 ----------- -->
+
 ## Create a confusion matrix
+
 Produce the confusion matrix and interpret the results.
+
 ```{r, confusionMatrix}
 # Create the confusion matrix
 confusionMatrix <- confusionMatrix(as.factor(round(data.test$fit_score)), data.test$Status)
 confusionMatrix
 ```
 
+In the confusion matrix we can see that we have 974 true positives, 543 false positives, 567 false negatives and 998 true negatives. The values which is bad for a bank is the FP value, because in this case they loose money. The FN value is not as bad, because the bank does not loose money, but they also don't earn money. In our case these two values are nearly the same. Ideally we would try to decrease the FP values.
+
 <!-- ----------- Exercise 2.5 ----------- -->
+
 ## AUC and Accuracy
+
 Report the AUC values and the overall accuracy and interpret the results.
+
 ```{r, AUC}
 
 # Get the AUC values
@@ -497,3 +552,5 @@ print(paste("AUC: ",fit_auc@y.values[[1]]*100))
 print(paste("Accuracy: ", confusionMatrix$overall['Accuracy']*100))
 
 ```
+
+The AUC percentage of our model is nearly 69%. This is not that bad but also not very good. This means that our model can can seperate the class in 69% of the cases. The accuracy of our model is nearly 64%. This is not very good. This means that our model can predict the status of the loan in 64% of the cases. This is nor far away from a random 50% guess.
