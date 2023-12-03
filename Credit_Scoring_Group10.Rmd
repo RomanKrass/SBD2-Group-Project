@@ -15,7 +15,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
 
 # Create a list of packages to install and load into the work space
-libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "reshape2", "plotly", "caret", "ROCR", "kableExtra")
+libraries = c("readr", "tidyverse", "dlookr", "ggplot2", "Hmisc", "reshape2", "plotly", "caret", "ROCR", "kableExtra","Boruta")
  
 # Install packages from the predefined libraries list
 lapply(libraries, function(x) if (!(x %in% installed.packages())) {
@@ -480,7 +480,7 @@ summary(model)
 
 ```
 
-In the Summary it is visible, that not all a lot of variables don't have a significant impact on the model. Because of that we will only extract the coefficients of the significant variables in the next step and will analyze them.
+In the Summary it is visible, that not all of the variables have a significant impact on the model. Because of that we will only extract the coefficients of the significant variables in the next step and will analyze them.
 
 ```{r}
 # Extract the significant variables from the model
@@ -553,4 +553,160 @@ print(paste("Accuracy: ", confusionMatrix$overall['Accuracy']*100))
 
 ```
 
-The AUC percentage of our model is nearly 69%. This is not that bad but also not very good. This means that our model can can seperate the class in 69% of the cases. The accuracy of our model is nearly 64%. This is not very good. This means that our model can predict the status of the loan in 64% of the cases. This is nor far away from a random 50% guess.
+The AUC percentage of our model is nearly 69%. This is not that bad but also not very good. This means that our model can seperate the class in 69% of the cases. The accuracy of our model is nearly 64%. This is not very good. This means that our model can predict the status of the loan in 64% of the cases. This is not far away from a random 50% guess.
+
+
+<!-- ----------- Exercise 3 ----------- -->
+
+# Exercise 3
+
+
+## Pre-processing steps
+
+In this excercise we review the data pre-processing steps that we carried out before training our model.
+
+* Missing values:
+  * The initial dataset had no missing values, so in this case there is no room for optimization.
+* Outliers:
+  * The analysis showed that there were some outliers present, especially in the annual income variable.
+  * The Outliers could be removed by applying a function and substituting the outliers by the 5th or 95th quantile value. This could have a chance to improve the predictive performance of the model.
+* Categorial Variables
+  * We converted character variables to factors in Excercise 2.2, to assist the model in the training process.
+  
+
+## Other ways to improve the model
+
+* Feature Selection
+  * We could try to select the most important features to improve the predictive performance of the model, respectively ignore the insignificant variables in the model.
+* Extended Data Collection
+  * The bank could think about collecting more data to improve the model. For example the bank could collect more data about the customers, like their age, their job, their credit score, their credit history, their debt-to-income ratio, the interest rate etc. While these attributes could improve the prediction a lot, they should be handled with care and be anonymised for data protection reasons.
+
+
+## Suggested Improvements
+
+We try to improve the model by applying the following steps.
+
+After balancing the dataset we substitute the outliers in the annual income variable:
+This example shows with the scatterplot, that the outliers for the annual income variable are substituted by the 5th and 95th quantile.
+```{r}
+
+substitute_outliers <- function(x) {
+  qnt <- quantile(x, probs=c(.05, .95))
+  x[x < qnt[1]] <- qnt[1]
+  x[x > qnt[2]] <- qnt[2]
+  return(x)
+}
+
+balanced_data$annual_inc <- substitute_outliers(balanced_data$annual_inc)
+
+# We now display the scatterplot of annual income and loan amount again, here we can see that the outliers are removed:
+plot <- plot_ly(balanced_data, x = ~annual_inc, y = ~loan_amnt, type = "scatter", mode = "markers",
+                marker = list(size = 10, opacity = 0.5, color = custom_fill),
+                hoverinfo = "text",
+                text = ~paste("Annual Income:", annual_inc, "<br>Loan Amount:", loan_amnt))
+                
+# Adding layout details
+plot <- plot %>% layout(title = "Scatter Plot of Loan Amount vs Annual Income",
+                        xaxis = list(title = "Annual Income"),
+                        yaxis = list(title = "Loan Amount"))
+
+# Display the plot
+plot
+
+```
+
+
+In the next step, we apply the substitute_outliers function to the numeric variables in the dataset.
+
+```{r}
+balanced_numeric <- map_df(balanced_data[,-c(3,4,6,7,14,17)], substitute_outliers)
+cols <- balanced_data[,c(3,4,6,7,14,17)]
+balanced_new <- cbind(balanced_numeric, cols)
+```
+
+
+## Significance of variables (Boruta)
+
+```{r, echo=FALSE}
+balanced_new$Status <- as.factor(balanced_new$Status)
+
+boruta_output <- Boruta(Status~., data = balanced_new, doTrace=2)
+
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+
+
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance")
+```
+
+The plot suggests that the application_type variables is not important to the model, so we remove it.
+```{r}
+balanced_new <- balanced_new[,-c(16)]
+```
+
+
+## Apply improvements to the model
+```{r}
+# Set the seed again because it sometime gets lost
+set.seed(7)
+
+# Split the data into training and test sets. 70% of the data will be used for training and 30% for testing.
+balanced_new$Status <- as.factor(balanced_new$Status)
+div <- createDataPartition(y = balanced_new$Status, p = 0.7, list = F)
+
+# Training Sample
+data.train <- balanced_new[div,]
+
+# Test Sample
+data.test <- balanced_new[-div,]
+
+
+mutate(data.train, Status = as.factor(Status),
+        grade = as.factor(grade),
+        home_ownership = as.factor(home_ownership),)
+
+model <- glm(Status ~ ., data = data.train, family = binomial())
+model <- glm(Status ~ ., data = data.train, family = binomial())
+
+summary(model)
+
+```
+
+
+## Test the new model
+```{r}
+# Test the perfromance of the model with the test data
+data.test$fit_score <- predict(model,type='response',data.test)
+model_preddiction <- prediction(data.test$fit_score, data.test$Status)
+model_roc <- performance(model_preddiction, "tpr", "fpr")
+
+# Plot the ROC Curve
+plot(model_roc, lwd=1, colorize = TRUE, main = "Model to predict Status - ROC Curve", 
+  cex.main=2, 
+  cex.axis=1.7, 
+  cex.lab=2)
+lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
+
+
+confusionMatrix <- confusionMatrix(as.factor(round(data.test$fit_score)), data.test$Status)
+confusionMatrix
+
+fit_auc <- performance(model_preddiction, measure = "auc")
+print(paste("AUC: ",fit_auc@y.values[[1]]*100))
+```
+
+
+## Results of the improvement
+The accuracy of the model is now at 64.21%, which is not much more than initially (63,98%).
+The AUC value is now 68.71%, which is even lower than initially (68.9%).
+
+This means that the improvements, like removing the outliers and the application_type variable, did not improve the model.
+We think that the reason for this is that the dataset is maybe not big enough to improve the model by removing outliers and variables.
+
+
+
+
+
+
+
+
