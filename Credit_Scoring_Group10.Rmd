@@ -221,13 +221,15 @@ plot_numeric_by_target <- function(data, target) {
   data_numeric <- data[, numeric_vars]
 
   for (var in names(data_numeric)) {
-    # Corrected usage of print() to render the plots
-    print(
-      ggplot(data, aes(x = as.factor(target), y = !!sym(var), fill = as.factor(target))) +
-      geom_boxplot(fill = custom_fill, color = custom_color) +
-      labs(title = paste("Distribution of", var, "by Status"), x = "Status", y = var) +
-      theme_minimal(base_size = 22)
-    )
+    if (var != "Status") {
+      # Corrected usage of print() to render the plots
+      print(
+        ggplot(data, aes(x = as.factor(target), y = !!sym(var), fill = as.factor(target))) +
+        geom_boxplot(fill = custom_fill, color = custom_color) +
+        labs(title = paste("Distribution of", var, "by Status"), x = "Status", y = var) +
+        theme_minimal(base_size = 22)
+      )
+    }
   }
 }
 
@@ -466,7 +468,7 @@ Train the classifier and report the coefficients obtained and interpret the resu
 
 ```{r, training}
 
-# Set charachter variables which are not a factor as factor so the glm function can work with them
+# Set character variables which are not a factor as factor so the glm function can work with them
 mutate(data.train, Status = as.factor(Status),
         application_type = as.factor(application_type),
         grade = as.factor(grade),
@@ -563,15 +565,15 @@ The AUC percentage of our model is nearly 69%. This is not that bad but also not
 
 ## Pre-processing steps
 
-In this excercise we review the data pre-processing steps that we carried out before training our model.
+In this exercise we review the data pre-processing steps that we carried out before training our model.
 
 * Missing values:
   * The initial dataset had no missing values, so in this case there is no room for optimization.
 * Outliers:
   * The analysis showed that there were some outliers present, especially in the annual income variable.
-  * The Outliers could be removed by applying a function and substituting the outliers by the 5th or 95th quantile value. This could have a chance to improve the predictive performance of the model.
+  * The outliers can be removed by applying a function and substituting the outliers by the 5th or 95th quantile value. This could have a chance to improve the predictive performance of the model.
 * Categorial Variables
-  * We converted character variables to factors in Excercise 2.2, to assist the model in the training process.
+  * We converted character variables to factors in Exercise 2.2, to assist the model in the training process.
   
 
 ## Other ways to improve the model
@@ -579,7 +581,7 @@ In this excercise we review the data pre-processing steps that we carried out be
 * Feature Selection
   * We could try to select the most important features to improve the predictive performance of the model, respectively ignore the insignificant variables in the model.
 * Extended Data Collection
-  * The bank could think about collecting more data to improve the model. For example the bank could collect more data about the customers, like their age, their job, their credit score, their credit history, their debt-to-income ratio, the interest rate etc. While these attributes could improve the prediction a lot, they should be handled with care and be anonymised for data protection reasons.
+  * The bank could think about collecting more data to improve the model. For example the bank could collect more data about the customers, like their age, their job, their credit score, their credit history, their debt-to-income ratio, the interest rate etc. While these attributes could improve the prediction a lot, they should be handled with care and be e.g. be anonymised for data protection reasons.
 
 
 ## Suggested Improvements
@@ -616,17 +618,17 @@ plot
 ```
 
 
-In the next step, we apply the substitute_outliers function to the numeric variables in the dataset.
+In the next step, we apply the substitute_outliers function to all the numeric variables in the dataset.
 
 ```{r}
-balanced_numeric <- map_df(balanced_data[,-c(3,4,6,7,14,17)], substitute_outliers)
-cols <- balanced_data[,c(3,4,6,7,14,17)]
+balanced_numeric <- map_df(balanced_data[,-c(3,4,5,6,7,14,17)], substitute_outliers)
+cols <- balanced_data[,c(3,4,5,6,7,14,17)]
 balanced_new <- cbind(balanced_numeric, cols)
 ```
 
 
 ## Significance of variables (Boruta)
-
+We apply the Boruta algorithm to find out, which variables are insignificant to the Status indicator.
 ```{r, echo=FALSE}
 balanced_new$Status <- as.factor(balanced_new$Status)
 
@@ -639,13 +641,14 @@ print(boruta_signif)
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance")
 ```
 
-The plot suggests that the application_type variables is not important to the model, so we remove it.
+The plot shows that the application_type variable is not important to the model, so we remove it:
 ```{r}
 balanced_new <- balanced_new[,-c(16)]
 ```
 
 
-## Apply improvements to the model
+## Apply the improvements to the model
+In this step we rebuilt the model with the new dataset, as we did in exercise 2.
 ```{r}
 # Set the seed again because it sometime gets lost
 set.seed(7)
@@ -660,12 +663,6 @@ data.train <- balanced_new[div,]
 # Test Sample
 data.test <- balanced_new[-div,]
 
-
-mutate(data.train, Status = as.factor(Status),
-        grade = as.factor(grade),
-        home_ownership = as.factor(home_ownership),)
-
-model <- glm(Status ~ ., data = data.train, family = binomial())
 model <- glm(Status ~ ., data = data.train, family = binomial())
 
 summary(model)
@@ -697,12 +694,19 @@ print(paste("AUC: ",fit_auc@y.values[[1]]*100))
 
 
 ## Results of the improvement
-The accuracy of the model is now at 64.21%, which is not much more than initially (63,98%).
-The AUC value is now 68.71%, which is even lower than initially (68.9%).
+The accuracy of the model is now at 64.21%, which is not a noticeable improvement to the initial value of 63,98%.
+The AUC value is now 68.72%, which is even lower than initially (68.9%).
 
-This means that the improvements, like removing the outliers and the application_type variable, did not improve the model.
-We think that the reason for this is that the dataset is maybe not big enough to improve the model by removing outliers and variables.
+This means that the improvements that we tried, like removing the outliers and the application_type variable, did not improve the model.
+We think that the reason for this could be that the dataset is maybe not big enough to improve the model by removing outliers and certain variables.
 
+But with a more extensive dataset, and maybe with some additional information about the customers, the model could be improved more.
+One could also think about feature engineering e.g. combining certain values to new variables, like for example the ratio between loan amount and annual income.
+
+
+<!-- ----------- Exercise 3 ----------- -->
+
+# Exercise 4
 
 
 
