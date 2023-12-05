@@ -629,17 +629,23 @@ balanced_new <- cbind(balanced_numeric, cols)
 
 ## Significance of variables (Boruta)
 We apply the Boruta algorithm to find out, which variables are insignificant to the Status indicator.
-```{r, echo=FALSE}
+```{r, echo=TRUE, warning=FALSE, results='hide', message=FALSE}
 balanced_new$Status <- as.factor(balanced_new$Status)
 
 boruta_output <- Boruta(Status~., data = balanced_new, doTrace=2)
 
 boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-print(boruta_signif)
 
-
-plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance")
 ```
+
+```{r}
+
+print(boruta_signif)
+plot(boruta_output, cex.axis=2, las=2, xlab="", main="Variable Importance")
+
+```
+
+
 
 The plot shows that the application_type variable is not important to the model, so we remove it:
 ```{r}
