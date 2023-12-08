@@ -53,6 +53,11 @@ custom_alpha <- 0.8
 custom_color <- "#161616"
 custom_light <- "#f4a460"
 custom_dark <- "#105F77"
+
+# Define sizes to create a general style
+base_size <- 15
+header_size_normal <- 20 # for normal plot headers
+header_size_small <- 15  # for plot headers with long text
 ```
 
 # Checking data for NA values {.unnumbered}
@@ -74,22 +79,22 @@ We also found out, that none of the variables has any `NA` values.
 
 This list describes the variables of the dataset loan_data:
 
-annual_inc: The self-reported annual income provided by the borrower during registration\
-application_type: Indicates whether the loan is an individual or joint application\
-dti: Borrower's total monthly debt payments divided by monthly income\
-grade: Assigned loan grade by the financial service provider\
-home_ownership: The home ownership status\
-int_rate: Interest Rate on the loan\
-loan_amnt: The listed amount of the loan applied for by the borrower\
-open_acc: Number of open trades in last 6 months\
-purpose: A category provided by the borrower for the loan request\
-revol_bal: Total credit revolving balance\
-revol_util: Revolving line utilization rate\
-tot_cur_bal: Total current balance of all accounts\
-total_acc: The total number of credit lines currently in the borrower's credit file\
-total_rec_int: Interest received to date\
-total_rev_hi_lim: Total revolving high credit/credit limit\
-verification_status: Indicates if the co-borrowers' joint income was verified
+**annual_inc**: The self-reported annual income provided by the borrower during registration\
+**application_type**: Indicates whether the loan is an individual or joint application\
+**dti**: Borrower's total monthly debt payments divided by monthly income\
+**grade**: Assigned loan grade by the financial service provider\
+**home_ownership**: The home ownership status\
+**int_rate**: Interest Rate on the loan\
+**loan_amnt**: The listed amount of the loan applied for by the borrower\
+**open_acc**: Number of open trades in last 6 months\
+**purpose**: A category provided by the borrower for the loan request\
+**revol_bal**: Total credit revolving balance\
+**revol_util**: Revolving line utilization rate\
+**tot_cur_bal**: Total current balance of all accounts\
+**total_acc**: The total number of credit lines currently in the borrower's credit file\
+**total_rec_int**: Interest received to date\
+**total_rev_hi_lim**: Total revolving high credit/credit limit\
+**verification_status**: Indicates if the co-borrowers' joint income was verified
 
 ------------------------------------------------------------------------
 
@@ -97,7 +102,7 @@ verification_status: Indicates if the co-borrowers' joint income was verified
 
 # Exercise 1
 
-## Describe the data. Specifically:
+## Describe the data:
 
 <!-- ----------- Exercise 1.1 ----------- -->
 
@@ -144,7 +149,7 @@ While checking the summary, we can observe, that there might be some values with
 ggplot(data, aes(x = factor(Status))) +
   geom_bar(fill = custom_fill, color = custom_color) +
   labs(x = "Loan Status", y = "Count", title = "Distribution of Loan Status") +
-  theme_minimal(base_size = 22)
+  theme_minimal(base_size = base_size)
 ```
 
 Checking the levels of the `loan status` variable, we can see, that the distribution is not balanced. There are much more entries with status = 0 than status = 1.
@@ -162,10 +167,10 @@ plot_histograms <- function(data) {
   # Loop through each numeric variable
   for(var in names(data_numeric)) {
     print(
-      ggplot(data, aes_string(x = var)) +
+      ggplot(data, aes(x = !!sym(var))) +
         geom_histogram(bins = 30, fill = custom_fill, color = custom_color) +
         labs(x = var, y = "Frequency", title = paste("Distribution of", var)) +
-        theme_minimal(base_size = 22)
+        theme_minimal(base_size = base_size)
     )
   }
 }
@@ -194,7 +199,7 @@ plot_boxplots <- function(data) {
       ggplot(data, aes_string(y = var)) +
         geom_boxplot(fill = custom_fill, color = custom_color) +
         labs(y = var, title = paste("Boxplot of", var)) +
-        theme_minimal(base_size = 22)
+        theme_minimal(base_size = base_size)
     )
   }
 }
@@ -227,7 +232,7 @@ plot_numeric_by_target <- function(data, target) {
         ggplot(data, aes(x = as.factor(target), y = !!sym(var), fill = as.factor(target))) +
         geom_boxplot(fill = custom_fill, color = custom_color) +
         labs(title = paste("Distribution of", var, "by Status"), x = "Status", y = var) +
-        theme_minimal(base_size = 22)
+        theme_minimal(base_size = base_size)
       )
     }
   }
@@ -277,10 +282,13 @@ plot_categorical_associations <- function(data) {
     plot <- ggplot(data, aes(x = !!sym(var), fill = factor(data$Status))) +
       geom_bar(position = "stack") +
       labs(title = paste("Association between", var, "and Status"), x = var, y = "Count") +
-      theme_minimal(base_size = 22) +
-      scale_fill_brewer(palette = "Set1") +
+      theme_minimal(base_size = base_size) +
+      scale_fill_manual(values=c(custom_dark, custom_light)) +
       guides(fill = guide_legend(title = "Status"))+
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(size = header_size_small)
+      )
     
     # Print the plot
     print(plot)
@@ -338,8 +346,9 @@ ggplot(melted_correlation_matrix, aes(Var1, Var2, fill = value)) +
   scale_fill_gradient2(low = custom_light, high = custom_dark, mid = "white", 
                        midpoint = 0, limit = c(-1,1), space = "Lab", 
                        name="Pearson\nCorrelation") +
-  theme_minimal(base_size = 22) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme_minimal(base_size = base_size) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), 
+        plot.title = element_text(size = header_size_small)) +
   labs(x = '', y = '', title = 'Correlation Matrix of Numeric Features')
 ```
 
@@ -355,7 +364,7 @@ The scatter plot showing the relationship between the loan amount requested and 
 # We plot an interactive scatter plot showing the association between the loan amount requested and the annual income of the borrower
 # Creating an interactive scatter plot
 plot <- plot_ly(data, x = ~annual_inc, y = ~loan_amnt, type = "scatter", mode = "markers",
-                marker = list(size = 10, opacity = 0.5, color = custom_fill),
+                marker = list(size = base_size, opacity = 0.5, color = custom_fill),
                 hoverinfo = "text",
                 text = ~paste("Annual Income:", annual_inc, "<br>Loan Amount:", loan_amnt))
                 
@@ -417,7 +426,7 @@ balanced_data <- rbind(data_default, data_no_default_balanced)
 ggplot(balanced_data, aes(x = factor(Status))) +
   geom_bar(fill = custom_fill, color = custom_color) +
   labs(title = "Bar Plot of Balanced Target Variable", x = "Loan Status", y = "Count") +
-  theme_minimal(base_size = 22)
+  theme_minimal(base_size = base_size)
 
 # Check the balance of the new dataset
 table(balanced_data$Status)
@@ -506,6 +515,8 @@ In contrast all values with a negative value decrease the chance for a default. 
 
 <!-- ----------- Exercise 2.3 ----------- -->
 
+## Plot the ROC Curve
+
 Plot the ROC and the Precision/Recall Curve and interpret the results.
 
 ```{r, ROC}
@@ -518,8 +529,8 @@ model_roc <- performance(model_preddiction, "tpr", "fpr")
 # Plot the ROC Curve
 plot(model_roc, lwd=1, colorize = TRUE, main = "Model to predict Status - ROC Curve", 
   cex.main=2, 
-  cex.axis=1.7, 
-  cex.lab=2)
+  cex.axis=1.5, 
+  cex.lab=1.5)
 lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
 
 ```
@@ -603,7 +614,7 @@ balanced_data$annual_inc <- substitute_outliers(balanced_data$annual_inc)
 
 # We now display the scatterplot of annual income and loan amount again, here we can see that the outliers are removed:
 plot <- plot_ly(balanced_data, x = ~annual_inc, y = ~loan_amnt, type = "scatter", mode = "markers",
-                marker = list(size = 10, opacity = 0.5, color = custom_fill),
+                marker = list(size = base_size, opacity = 0.5, color = custom_fill),
                 hoverinfo = "text",
                 text = ~paste("Annual Income:", annual_inc, "<br>Loan Amount:", loan_amnt))
                 
@@ -639,12 +650,9 @@ boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
 ```
 
 ```{r}
-
 print(boruta_signif)
-plot(boruta_output, cex.axis=2, las=2, xlab="", main="Variable Importance")
-
+plot(boruta_output, cex.axis=1, las=2, xlab="", main="Variable Importance")
 ```
-
 
 
 The plot shows that the application_type variable is not important to the model, so we remove it:
@@ -686,8 +694,8 @@ model_roc <- performance(model_preddiction, "tpr", "fpr")
 # Plot the ROC Curve
 plot(model_roc, lwd=1, colorize = TRUE, main = "Model to predict Status - ROC Curve", 
   cex.main=2, 
-  cex.axis=1.7, 
-  cex.lab=2)
+  cex.axis=1.5, 
+  cex.lab=1.5)
 lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
 
 
@@ -710,13 +718,94 @@ But with a more extensive dataset, and maybe with some additional information ab
 One could also think about feature engineering e.g. combining certain values to new variables, like for example the ratio between loan amount and annual income.
 
 
-<!-- ----------- Exercise 3 ----------- -->
+<!-- ----------- Exercise 4 ----------- -->
 
 # Exercise 4
 
+## Credit decisions based on the prediction model
+To conclude this assignment, we address the question of how challenges should be dealt with when a company applies the model presented in daily business. In particular, we address the ethical challenges and moral obligations that the company has and what options there are to reduce them. 
+
+### Challenges for a company using this model
+As a company that uses this model on a day-to-day basis, it is important that ethical challenges are taken into account and a way of dealing with them is defined. The following points indicate areas that the company needs to clarify:
+  
+**1. Algorithmic Bias and Fairness** 
+There is a risk that the model may inadvertently introduce biases that lead to unfair outcomes for certain groups of people. The model presented is about assessing creditworthiness. Particular attention should therefore be paid to this point. Biased decisions could have a significant financial impact on individuals.
+
+**2. Data Protection and Data Security**
+When using this model, data protection and the security of customer data must be guaranteed. This includes protecting sensitive personal data from unauthorized access and ensuring that data processing complies with data protection laws and regulations. 
+
+**3. Impact on the Workforce**
+Such models can accelerate the automation of processes and efficiency in companies. This in turn can have an impact on those employees who currently perform credit scoring and analysis manually. It is therefore important that this transition period is organised in such a way that employees are taken into account in the change process. But still, the model needs to be checked or adapted by humans.
+
+**4. Accountability and Responsibility**
+A predictive model should be used as a supporting tool. If a company uses this model, it is important that it takes responsibility for the decisions made by the model. This also means that the company must be able to explain how the decisions (based on the model) came about and how the model works.
+
+To summarize, ethical principles should always be respected by a company and ethical challenges should be dealt with - regardless of which innovations are introduced. The authors of this paper consider points 1 and 4 in particular to be of key importance. By using this model, the company should introduce a process that regularly checks the model for bias. It must also be ensured that the model is used as an instrument, with the individual bearing the ultimate responsibility.
+
+### Ways to overcome / mitigate the issues
+For the 4 challenges presented, we worked out options as to how they can be handled.
+
+**1. Algorithmic Bias and Fairness** 
+Firstly, to minimize algorithmic bias in the model, it is important that the model is regularly checked for bias. In addition, a wide range of training data must be used. A model that makes predictions, only makes these predictions based on the data with which it was trained. By using a diverse and representative data set, biases in the model can be reduced. As this point should be emphasised, a third point is presented: The company could implement so-called fairness algorithms. This means that algorithms are used that have been specially developed to recognize and correct distortions in AI models. Therefore the model should not use information about origin, religion, gender or private stuff like that in its decision.
+
+**2. Data Protection and Data Security**
+To minimize data protection and security risks, the company could carry out regular audits to check whether data protection laws such as GDPR can be complied with. Another way to counteract this challenge is to inform customers transparently and obtain consent before data is used. For example where and how the data is stored, if it's encrypted and how regularly the data is being backed-up.
+
+**3. Impact on the Workforce**
+Minimizing the impact on the workforce: To address this challenge, the company could offer retraining and upskilling programs. Offering training-programs that help employees adapt to new roles or technologies can reduce the negative impact of automation on jobs. Another point is to involve employees in the change process (e.g. seeking opinions, addressing concerns, etc.).
+
+**4. Accountability and Responsibility**
+Transparent decision-making processes should be defined so that responsibility remains with the company and ultimately with the individual. In this process, the model should serve as a supporting tool, with the human making the final decision and being able to explain the model's decision. In addition, the company could develop ethical guidelines (Corporate Social Responsibility) so that those involved are aware of their responsibilities.
+
+In summary, it can be concluded that ethical principles should always be observed by a company and ethical challenges should be overcome - regardless of which innovations are introduced. The authors of this paper consider points one and 4 to be particularly important. When using this model, the company should implement a process that regularly checks the model for bias. It is also important to ensure that the model is used as a tool, with ultimate responsibility resting with the individual. The approaches presented not only reduce risk, but also create trust among customers and employees and thus promote a sustainable business model.
 
 
+# SessionInfo {.unnumbered}
 
+```{r}
+sessionInfo()
+```
 
+```{css, echo=FALSE}
+/* some styling things to make the markdown look more cool :) */
 
+body {
+  background-color: #fafafa;
+  font-family: Arial;
+  color: black;
+}
 
+.tocify {
+  color: #111;
+  border-color: #105F77;
+}
+
+.tocify-item{
+  font-size: 14px;
+}
+
+.tocify-header{
+  font-size: 16px;
+}
+
+.list-group-item.active,
+.list-group-item.active:hover {
+  background-color: #105F77;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+h2 {
+font-size: 26px;
+}
+
+h3 {
+font-size: 22px;
+}
+
+p {
+font-size: 16px;
+}
+```
