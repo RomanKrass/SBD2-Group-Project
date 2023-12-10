@@ -180,8 +180,6 @@ plot_histograms(data)
 
 ```
 
-------------------------------------------------------------------------
-
 <!-- ----------- Exercise 1.2 ----------- -->
 
 ## Analysing Outliers
@@ -210,8 +208,6 @@ plot_boxplots <- function(data) {
 plot_boxplots(data)
 
 ```
-
-------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.3 ----------- -->
 
@@ -264,8 +260,6 @@ The debt-to-income ratio appears slightly higher for the default group. This sug
 The revolving balance shows a relatively similar distribution across both groups, with a slightly higher median in the non-default group. This indicates that revolving balance alone might not be a strong predictor of default.
 
 From this analysis, it seems that the interest rate and debt-to-income ratio are particularly relevant variables in predicting the likelihood of loan default. Higher interest rates and higher DTI ratios are more common in loans that default, suggesting these factors are important in assessing credit risk. While loan amount, annual income, and revolving balance do show some differences, their impact appears to be less pronounced compared to interest rates and DTI ratios.
-
-------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.4 ----------- -->
 
@@ -323,8 +317,6 @@ The application type, whether individual or joint, shows some differences in def
 
 From these observations, it's evident that certain categorical variables such as loan grade and loan purpose show a more pronounced association with loan status, indicating their potential relevance in predicting loan defaults. Variables like home ownership and application type also show some association but to a lesser degree. The verification status, interestingly, has a noticeable impact, suggesting that the level of scrutiny in the loan approval process can affect the likelihood of a loan defaulting. These insights are valuable for understanding the risk factors associated with loan defaults and can guide further analysis and modeling efforts.
 
-------------------------------------------------------------------------
-
 <!-- ----------- Exercise 1.5 ----------- -->
 
 ## Visualization of the correlations
@@ -355,7 +347,22 @@ ggplot(melted_correlation_matrix, aes(Var1, Var2, fill = value)) +
   labs(x = '', y = '', title = 'Correlation Matrix of Numeric Features')
 ```
 
-------------------------------------------------------------------------
+### Analysis of Highly Correlated Variables  
+**Total Accounts (total_acc) and Open Accounts (open_acc)**  
+There is a strong positive correlation between the total number of credit lines (total_acc) and the number of open trades (open_acc). This is expected as having more total accounts typically means more open accounts.
+
+**Total Current Balance (tot_cur_bal) and Total Revolving High Credit/Limit (total_rev_hi_lim)**  
+A significant positive correlation is observed between the total current balance and the total revolving high credit/credit limit. This suggests that borrowers with higher total balances tend to have higher credit limits.
+
+**Loan Amount (loan_amnt) and Interest Received (total_rec_int)**
+The loan amount is positively correlated with the total interest received. This indicates that larger loans accumulate more interest over time.
+
+**Other Notable Correlations**  
+There are moderate correlations between other variables like loan amount and annual income, indicating that borrowers with higher incomes tend to take larger loans.
+
+### Decision on Keeping Variables
+When deciding whether to keep all variables, it's important to consider the degree of correlation. While high correlation indicates a relationship, it doesn't necessarily imply causation.
+In predictive modeling, extremely high correlations can lead to multicollinearity, which might skew the results of certain models like linear regression. For building a predictive model, particularly when using linear models, we should address high correlations by removing one of the correlated variables or using dimensionality reduction techniques.
 
 <!-- ----------- Exercise 1.6 ----------- -->
 
@@ -398,8 +405,6 @@ High Correlation: Given the positive correlation, both annual_inc (annual income
 Keeping Both Variables: Although they are correlated, both variables likely contribute unique information. Annual income is a key factor in a borrower's ability to repay, while the loan amount is directly related to the loan's terms and risk. Therefore, it would be beneficial to keep both variables in the model.
 
 In summary, the association between loan amount and annual income is significant and positive, indicating the importance of these variables in the predictive model. Their relationship suggests that while income is a factor in determining loan amounts, other variables also influence the final loan amount requested.
-
-------------------------------------------------------------------------
 
 <!-- ----------- Exercise 1.7 ----------- -->
 
@@ -445,6 +450,8 @@ Balanced datasets provide a more realistic evaluation of model performance metri
 
 **Reflect Real-World Scenarios**\
 In some cases, balancing a dataset can help models learn patterns that are not overrepresented by the majority class, thus better reflecting real-world scenarios where the target classes are more evenly distributed.
+
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 2 ----------- -->
 
@@ -571,11 +578,13 @@ print(paste("Accuracy: ", confusionMatrix$overall['Accuracy']*100))
 
 The AUC percentage of our model is nearly 69%. This is not that bad but also not very good. This means that our model can seperate the class in 69% of the cases. The accuracy of our model is nearly 64%. This is not very good. This means that our model can predict the status of the loan in 64% of the cases. This is not far away from a random 50% guess.
 
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 3 ----------- -->
 
 # Exercise 3
 
+<!-- ----------- Exercise 3.1 ----------- -->
 
 ## Pre-processing steps
 
@@ -588,7 +597,8 @@ In this exercise we review the data pre-processing steps that we carried out bef
   * The outliers can be removed by applying a function and substituting the outliers by the 5th or 95th quantile value. This could have a chance to improve the predictive performance of the model.
 * Categorial Variables
   * We converted character variables to factors in Exercise 2.2, to assist the model in the training process.
-  
+
+<!-- ----------- Exercise 3.2 ----------- -->
 
 ## Other ways to improve the model
 
@@ -597,6 +607,7 @@ In this exercise we review the data pre-processing steps that we carried out bef
 * Extended Data Collection
   * The bank could think about collecting more data to improve the model. For example the bank could collect more data about the customers, like their age, their job, their credit score, their credit history, their debt-to-income ratio, the interest rate etc. While these attributes could improve the prediction a lot, they should be handled with care and be e.g. be anonymised for data protection reasons.
 
+<!-- ----------- Exercise 3.3 ----------- -->
 
 ## Suggested Improvements
 
@@ -640,6 +651,7 @@ cols <- balanced_data[,c(3,4,5,6,7,14,17)]
 balanced_new <- cbind(balanced_numeric, cols)
 ```
 
+<!-- ----------- Exercise 3.4 ----------- -->
 
 ## Significance of variables (Boruta)
 We apply the Boruta algorithm to find out, which variables are insignificant to the Status indicator.
@@ -663,6 +675,7 @@ The plot shows that the application_type variable is not important to the model,
 balanced_new <- balanced_new[,-c(16)]
 ```
 
+<!-- ----------- Exercise 3.5 ----------- -->
 
 ## Apply the improvements to the model
 In this step we rebuilt the model with the new dataset, as we did in exercise 2.
@@ -686,6 +699,7 @@ summary(model)
 
 ```
 
+<!-- ----------- Exercise 3.6 ----------- -->
 
 ## Test the new model
 ```{r}
@@ -709,6 +723,7 @@ fit_auc <- performance(model_preddiction, measure = "auc")
 print(paste("AUC: ",fit_auc@y.values[[1]]*100))
 ```
 
+<!-- ----------- Exercise 3.7 ----------- -->
 
 ## Results of the improvement
 The accuracy of the model is now at 64.21%, which is not a noticeable improvement to the initial value of 63,98%.
@@ -720,15 +735,18 @@ We think that the reason for this could be that the dataset is maybe not big eno
 But with a more extensive dataset, and maybe with some additional information about the customers, the model could be improved more.
 One could also think about feature engineering e.g. combining certain values to new variables, like for example the ratio between loan amount and annual income.
 
+------------------------------------------------------------------------
 
 <!-- ----------- Exercise 4 ----------- -->
 
 # Exercise 4
 
-## Credit decisions based on the prediction model
+<!-- ----------- Exercise 4.1 ----------- -->
+
+## Credit decisions based on the prediction model {.unnumbered}
 To conclude this assignment, we address the question of how challenges should be dealt with when a company applies the model presented in daily business. In particular, we address the ethical challenges and moral obligations that the company has and what options there are to reduce them. 
 
-### Challenges for a company using this model
+## Challenges for a company using this model
 As a company that uses this model on a day-to-day basis, it is important that ethical challenges are taken into account and a way of dealing with them is defined. The following points indicate areas that the company needs to clarify:
   
 **1. Algorithmic Bias and Fairness** 
@@ -745,7 +763,9 @@ A predictive model should be used as a supporting tool. If a company uses this m
 
 To summarize, ethical principles should always be respected by a company and ethical challenges should be dealt with - regardless of which innovations are introduced. The authors of this paper consider points 1 and 4 in particular to be of key importance. By using this model, the company should introduce a process that regularly checks the model for bias. It must also be ensured that the model is used as an instrument, with the individual bearing the ultimate responsibility.
 
-### Ways to overcome / mitigate the issues
+<!-- ----------- Exercise 4.2 ----------- -->
+
+## Ways to overcome / mitigate the issues
 For the 4 challenges presented, we worked out options as to how they can be handled.
 
 **1. Algorithmic Bias and Fairness** 
