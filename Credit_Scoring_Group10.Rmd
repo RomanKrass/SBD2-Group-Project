@@ -343,8 +343,8 @@ ggplot(melted_correlation_matrix, aes(Var1, Var2, fill = value)) +
                        name="Pearson\nCorrelation") +
   theme_minimal(base_size = base_size) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), 
-        plot.title = element_text(size = header_size_small)) +
-  labs(x = '', y = '', title = 'Correlation Matrix of Numeric Features')
+        plot.title = element_text(size = header_size_normal)) +
+  labs(x = '', y = '', title = 'Correlation Matrix of Numeric Features') #empty x and y axes to not show any labels
 ```
 
 ### Analysis of Highly Correlated Variables  
