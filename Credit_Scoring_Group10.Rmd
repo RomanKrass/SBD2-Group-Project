@@ -55,7 +55,7 @@ custom_light <- "#f4a460"
 custom_dark <- "#105F77"
 
 # Define sizes to create a general style
-base_size <- 15
+base_size <- 17
 header_size_normal <- 20 # for normal plot headers
 header_size_small <- 15  # for plot headers with long text
 ```
@@ -195,12 +195,14 @@ plot_boxplots <- function(data) {
 
   # Loop through each numeric variable
   for(var in names(data_numeric)) {
+    if (var != "Status") {
     print(
       ggplot(data, aes_string(y = var)) +
         geom_boxplot(fill = custom_fill, color = custom_color) +
         labs(y = var, title = paste("Boxplot of", var)) +
         theme_minimal(base_size = base_size)
     )
+    }
   }
 }
 
@@ -258,7 +260,8 @@ The annual income of borrowers does not show a significant difference in the med
 **Debt-to-Income Ratio (dti)**\
 The debt-to-income ratio appears slightly higher for the default group. This suggests that a higher DTI ratio might be associated with a greater risk of default. The higher spread in the default group indicates a wider variability in DTI ratios among those who default.
 
-**Revolving Balance (revol_bal)** The revolving balance shows a relatively similar distribution across both groups, with a slightly higher median in the non-default group. This indicates that revolving balance alone might not be a strong predictor of default.
+**Revolving Balance (revol_bal)**\
+The revolving balance shows a relatively similar distribution across both groups, with a slightly higher median in the non-default group. This indicates that revolving balance alone might not be a strong predictor of default.
 
 From this analysis, it seems that the interest rate and debt-to-income ratio are particularly relevant variables in predicting the likelihood of loan default. Higher interest rates and higher DTI ratios are more common in loans that default, suggesting these factors are important in assessing credit risk. While loan amount, annual income, and revolving balance do show some differences, their impact appears to be less pronounced compared to interest rates and DTI ratios.
 
